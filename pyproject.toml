@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "scs"
+version = "0.1.0"
+description = "Sharpened Cosine Similarity, in Pytorch"
+authors = ["Stephen Hogg <saenet.r@gmail.com>"]
+license = "AGPLv3"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+torch = "1.9.0"
+numpy = "^1.22.1"
+
+[tool.poetry.dev-dependencies]
+black = "^22.1.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
