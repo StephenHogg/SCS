@@ -1,3 +1,4 @@
+from functools import partial
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -9,8 +10,6 @@ class SCS(nn.Module):
         self, channels_in: int, channels_out: int, kernel: torch.Size, *args, **kwargs
     ):
         super(SCS, self).__init__(*args, **kwargs)
-        self.channels_in = channels_in
-        self.channels_out = channels_out
         self.kernel_shape = kernel
         self.stride = 1
         self.dilation = 1
@@ -68,7 +67,8 @@ class SCS(nn.Module):
             patches = patches.unfold(d, k, self.stride)
 
         # Merge all patches into the channel dimension and move that
-        # to the end of the tensor
+        # to the end of the tensor. Then flatten the patches and channel
+        # dimension together.
         patches = (
             patches.moveaxis(1, -1)
             .flatten(-1 * (len(self.kernel_shape) + 1))
@@ -94,3 +94,20 @@ class SCS(nn.Module):
         res = sim.reshape(*patch_dims[:-1], -1).moveaxis(-1, 1)
 
         return res
+
+
+class AbsPool(nn.Module):
+    def __init__(self, pooling_module, *args, **kwargs):
+        super(AbsPool, self).__init__()
+        self.pooling_layer = pooling_module(*args, **kwargs)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        pos_pool = self.pooling_layer(x)
+        neg_pool = self.pooling_layer(-x)
+        abs_pool = torch.where(pos_pool >= neg_pool, pos_pool, -neg_pool)
+        return abs_pool
+
+
+MaxAbsPool1d = partial(AbsPool, pooling_module=nn.MaxPool1d)
+MaxAbsPool2d = partial(AbsPool, pooling_module=nn.MaxPool2d)
+MaxAbsPool3d = partial(AbsPool, pooling_module=nn.MaxPool3d)
