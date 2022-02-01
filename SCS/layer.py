@@ -20,28 +20,26 @@ class SCS(nn.Module):
         self.b = nn.Parameter(torch.Tensor(channels_out))
 
     def reset_parameters(self):
-        nn.init.xavier_uniform_(self.q)
-        nn.init.xavier_uniform_(self.p)
+        nn.init.uniform_(self.q)
+        nn.init.uniform_(self.p)
+        nn.init.uniform_(self.b)
         nn.init.xavier_uniform_(self.w)
-        nn.init.xavier_uniform_(self.b)
 
-    def sharpened_cosine_sim(self, s: torch.Tensor, k: torch.Tensor) -> torch.Tensor:
+    def sharpened_cosine_sim(self, s: torch.Tensor) -> torch.Tensor:
         """Function to perform sharpened cosine similarity as per https://twitter.com/_brohrer_/status/1232460132455305218
 
         Args:
             s (torch.Tensor): Signal Tensor. Must be 2D, with the size of the second dimension equal to the number of elements
                 in a given patch
-            k (torch.Tensor): Kernel Tensor. Must be 2D, with the first dimension size equal to the number of elements in a patch from
-                the source array and the second dimension size equal to the number of desired output channels
 
         Returns:
             torch.Tensor: Computed similarity score
         """
         q = self.q.exp()
         p = self.p.exp()
-        s_dot_k = torch.einsum("bx,xc->bc", s, k)
+        s_dot_k = torch.einsum("bx,xc->bc", s, self.w)
         norm_s_q = torch.norm(s, dim=1) + q
-        norm_k_q = torch.norm(k) + q
+        norm_k_q = torch.norm(self.w) + q
         norm_base = 1 / (norm_s_q * norm_k_q)
         sim_frac = torch.einsum("bc,b->bc", s_dot_k, norm_base)
         sim_p = sim_frac**p
@@ -52,7 +50,7 @@ class SCS(nn.Module):
         Adapted from https://discuss.pytorch.org/t/tf-extract-image-patches-in-pytorch/43837/6
 
         Args:
-            x (torch.Tensor): Source tensor
+            x (torch.Tensor): Source tensor. Must contain at least a batch, channel and one other dimension.
 
         Returns:
             torch.Tensor: Tensor with patches in the first dimension
@@ -69,24 +67,30 @@ class SCS(nn.Module):
         for d, k in zip(range(2, x.dim()), self.kernel_shape):
             patches = patches.unfold(d, k, self.stride)
 
-        # Merge all patches into the channel dimension
+        # Merge all patches into the channel dimension and move that
+        # to the end of the tensor
         patches = (
             patches.moveaxis(1, -1)
             .flatten(-1 * (len(self.kernel_shape) + 1))
-            .moveaxis(-1, 1)
             .contiguous()
         )
 
         return patches
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # Pad the array
 
         # Extract patches
+        patches = self.extract_image_patches(x)
 
-        # Push all other dimensions into the batch dimension
+        # Push all dimensions besides patch into the batch dimension.
+        # Keep track of what they were before flattening, though.
+        patch_dims = patches.shape
+        flat_patches = torch.flatten(patches, end_dim=-2)
 
         # Calculate the sharpened cosine similarity
+        sim = self.sharpened_cosine_sim(flat_patches) + self.b
 
         # Retrieve squashed dimensions
-        return x
+        res = sim.reshape(*patch_dims[:-1], -1).moveaxis(-1, 1)
+
+        return res
