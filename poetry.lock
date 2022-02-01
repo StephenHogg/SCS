@@ -40,6 +40,14 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
+name = "einops"
+version = "0.4.0"
+description = "A new flavour of deep learning operations"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "mypy-extensions"
 version = "0.4.3"
 description = "Experimental type system extensions for programs checked with the mypy typechecker."
@@ -105,7 +113,7 @@ python-versions = ">=3.6"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "cee56178cb0034b51c97c893fda0d93aa429a85088c4e20f50a88ddcd40757b1"
+content-hash = "3eff2c79dcfe46d5c4dd0e4fc61ecb06ee83fae97bc584d0a66611a01f398cb1"
 
 [metadata.files]
 black = [
@@ -140,6 +148,10 @@ click = [
 colorama = [
     {file = "colorama-0.4.4-py2.py3-none-any.whl", hash = "sha256:9f47eda37229f68eee03b24b9748937c7dc3868f906e8ba69fbcbdd3bc5dc3e2"},
     {file = "colorama-0.4.4.tar.gz", hash = "sha256:5941b2b48a20143d2267e95b1c2a7603ce057ee39fd88e7329b0c292aa16869b"},
+]
+einops = [
+    {file = "einops-0.4.0-py3-none-any.whl", hash = "sha256:3de1c3bf5da19cd40b6e84d72dce2d26b572314f17258dd30bfe6153d6b52cd5"},
+    {file = "einops-0.4.0.tar.gz", hash = "sha256:62e8351bd2cab9773006610fdd5e5f26dc00727f8c62b04dffcbb046ebbfb08c"},
 ]
 mypy-extensions = [
     {file = "mypy_extensions-0.4.3-py2.py3-none-any.whl", hash = "sha256:090fedd75945a69ae91ce1303b5824f428daf5a028d2f6ab8a299250a846f15d"},
