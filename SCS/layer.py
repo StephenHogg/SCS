@@ -48,8 +48,8 @@ class SCS(nn.Module):
         """
         q = self.q.exp()
         s_dot_k = torch.einsum("bx,xc->bc", s, self.w)
-        norm_s_q = torch.max(torch.norm(s, dim=1), self.epsilon) + q
-        norm_k_q = torch.max(torch.norm(self.w), self.epsilon) + q
+        norm_s_q = torch.clamp(torch.norm(s, dim=1), min=self.epsilon) + q
+        norm_k_q = torch.clamp(torch.norm(self.w), min=self.epsilon) + q
         norm_base = 1 / (norm_s_q * norm_k_q)
         sim_frac = torch.einsum("bc,b->bc", s_dot_k, norm_base)
         sign = torch.sign(sim_frac)
