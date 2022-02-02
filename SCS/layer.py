@@ -5,22 +5,34 @@ import torch.nn.functional as F
 import math
 
 
+def sigplus(x: torch.Tensor) -> torch.Tensor:
+    return F.sigmoid(x) * F.softplus(x)
+
+
 class SCS(nn.Module):
     def __init__(
-        self, channels_in: int, channels_out: int, kernel: torch.Size, *args, **kwargs
+        self,
+        channels_in: int,
+        channels_out: int,
+        kernel: torch.Size,
+        epsilon: float = 1e-12,
+        *args,
+        **kwargs
     ):
         super(SCS, self).__init__(*args, **kwargs)
         self.kernel_shape = kernel
         self.stride = 1
         self.dilation = 1
+        self.epsilon = epsilon
         self.q = nn.Parameter(torch.Tensor(1))
         self.p = nn.Parameter(torch.Tensor(1))
         self.w = nn.Parameter(torch.Tensor(kernel.numel() * channels_in, channels_out))
         self.b = nn.Parameter(torch.Tensor(channels_out))
+        self.reset_parameters()
 
     def reset_parameters(self):
+        nn.init.constant_(self.p, 2)
         nn.init.uniform_(self.q)
-        nn.init.uniform_(self.p)
         nn.init.uniform_(self.b)
         nn.init.xavier_uniform_(self.w)
 
@@ -35,14 +47,17 @@ class SCS(nn.Module):
             torch.Tensor: Computed similarity score
         """
         q = self.q.exp()
-        p = self.p.exp()
         s_dot_k = torch.einsum("bx,xc->bc", s, self.w)
-        norm_s_q = torch.norm(s, dim=1) + q
-        norm_k_q = torch.norm(self.w) + q
+        norm_s_q = torch.max(torch.norm(s, dim=1), self.epsilon) + q
+        norm_k_q = torch.max(torch.norm(self.w), self.epsilon) + q
         norm_base = 1 / (norm_s_q * norm_k_q)
         sim_frac = torch.einsum("bc,b->bc", s_dot_k, norm_base)
-        sim_p = sim_frac**p
-        return torch.sign(s_dot_k) * sim_p
+        sign = torch.sign(sim_frac)
+        sim_frac_abs = sim_frac.abs() + 1e-12
+        sim_p = torch.pow(sim_frac_abs + sigplus(self.b), sigplus(self.p))
+        res = sign * sim_p
+
+        return res
 
     def extract_image_patches(self, x: torch.Tensor) -> torch.Tensor:
         """Extract patches from an N-dimensional tensor.
