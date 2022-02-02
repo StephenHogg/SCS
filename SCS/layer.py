@@ -25,7 +25,7 @@ class SCS(nn.Module):
         self.dilation = 1
         self.epsilon = epsilon
         self.q = nn.Parameter(torch.Tensor(1))
-        self.p = nn.Parameter(torch.Tensor(1))
+        self.p = nn.Parameter(torch.Tensor(channels_out))
         self.w = nn.Parameter(torch.Tensor(kernel.numel() * channels_in, channels_out))
         self.b = nn.Parameter(torch.Tensor(channels_out))
         self.reset_parameters()
@@ -103,7 +103,7 @@ class SCS(nn.Module):
         flat_patches = torch.flatten(patches, end_dim=-2)
 
         # Calculate the sharpened cosine similarity
-        sim = self.sharpened_cosine_sim(flat_patches) + self.b
+        sim = self.sharpened_cosine_sim(flat_patches)
 
         # Retrieve squashed dimensions
         res = sim.reshape(*patch_dims[:-1], -1).moveaxis(-1, 1)
