@@ -123,6 +123,6 @@ class AbsPool(nn.Module):
         return abs_pool
 
 
-MaxAbsPool1d = partial(AbsPool, pooling_module=nn.MaxPool1d)
-MaxAbsPool2d = partial(AbsPool, pooling_module=nn.MaxPool2d)
-MaxAbsPool3d = partial(AbsPool, pooling_module=nn.MaxPool3d)
+MaxAbsPool1d = partial(AbsPool, nn.MaxPool1d)
+MaxAbsPool2d = partial(AbsPool, nn.MaxPool2d)
+MaxAbsPool3d = partial(AbsPool, nn.MaxPool3d)
